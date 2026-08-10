@@ -1,0 +1,94 @@
+# 開発環境: docker compose up -d と make up は同じ起動経路
+# テスト: docker compose run --rm test または make test
+
+services:
+  # docker compose up -d 時に .env が無ければ作成する
+  init:
+    image: alpine:3.20
+    container_name: kodomo-init
+    working_dir: /workspace
+    volumes:
+      - .:/workspace
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -e
+        if [ ! -f .env ]; then
+          cp .env.example .env
+          echo "[init] .env を作成しました"
+        else
+          echo "[init] .env は既に存在します"
+        fi
+    restart: "no"
+
+  db:
+    image: postgres:16-alpine
+    container_name: kodomo-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-kodomo}
+      POSTGRES_USER: ${POSTGRES_USER:-kodomo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-kodomo}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-kodomo} -d ${POSTGRES_DB:-kodomo}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    depends_on:
+      init:
+        condition: service_completed_successfully
+
+  app:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    # up -d のたびにビルド → pom.xml のライブラリ取得・同梱
+    pull_policy: build
+    container_name: kodomo-app
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-kodomo}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-kodomo}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-kodomo}
+      SERVER_PORT: 8080
+    depends_on:
+      init:
+        condition: service_completed_successfully
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8080/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  # ホストに Java/Maven 不要。コンテナ内で mvn test を実行
+  test:
+    image: maven:3.9-eclipse-temurin-26-alpine
+    container_name: kodomo-test
+    working_dir: /app
+    volumes:
+      - ./backend:/app
+      - maven_cache:/root/.m2
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-kodomo}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-kodomo}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-kodomo}
+    depends_on:
+      init:
+        condition: service_completed_successfully
+      db:
+        condition: service_healthy
+    command: ["mvn", "-B", "test"]
+    profiles: ["test"]
+
+volumes:
+  postgres_data:
+  maven_cache:

@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop, "feature/**"]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  test:
+    name: Java tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: kodomo
+          POSTGRES_USER: kodomo
+          POSTGRES_PASSWORD: kodomo
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U kodomo -d kodomo"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/kodomo
+      SPRING_DATASOURCE_USERNAME: kodomo
+      SPRING_DATASOURCE_PASSWORD: kodomo
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java 26
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "26"
+          cache: maven
+          cache-dependency-path: backend/pom.xml
+
+      - name: Run tests
+        run: mvn -B test
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: backend/target/surefire-reports/
+          if-no-files-found: ignore
