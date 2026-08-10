@@ -98,8 +98,8 @@ shokusuu1 から移植（リポジトリ固有の一時スクリプトは除外�
 | Secret | 値 |
 |---|---|
 | `BACKLOG_API_KEY` | Backlog APIキー |
-| `BACKLOG_SPACE_ID` | `kamaho`（`kamaho.backlog.com` のスペースID部分） |
-| `BACKLOG_PROJECT_KEY` | `KODOMO_INPUTCHECK` |
+| `BACKLOG_SPACE_ID` | ``（`*.backlog.com` のスペースID部分） |
+| `BACKLOG_PROJECT_KEY` | `` |
 | `BACKLOG_DOMAIN` | 未設定なら `backlog.com` がデフォルト |
 
 - `github-issue-to-backlog.yml`: GitHub Issue作成/編集/close/reopen → Backlog課題に反映
