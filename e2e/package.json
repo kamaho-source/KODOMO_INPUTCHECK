@@ -1,0 +1,11 @@
+{
+  "name": "kodomo-inputcheck-e2e",
+  "private": true,
+  "scripts": {
+    "test:no-db": "playwright test tests/no-db",
+    "test:db": "playwright test tests/db"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.48.0"
+  }
+}

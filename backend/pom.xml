@@ -72,8 +72,8 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
-                    <!-- テスト未追加でも CI を落とさない（担当者が追加したら自動実行） -->
-                    <failIfNoTests>false</failIfNoTests>
+                    <!-- テストが1件も無いとCIを失敗させる（テスト未作成でのマージを防止） -->
+                    <failIfNoTests>true</failIfNoTests>
                 </configuration>
             </plugin>
         </plugins>

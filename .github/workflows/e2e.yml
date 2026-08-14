@@ -1,0 +1,82 @@
+name: E2E
+
+on:
+  push:
+    branches: [main, develop, "feature/**"]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  e2e-no-db:
+    name: E2E (no-db)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start app stack
+        run: docker compose up -d --wait
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: e2e/package-lock.json
+
+      - name: Install Playwright
+        working-directory: e2e
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Run no-db E2E tests
+        working-directory: e2e
+        run: npm run test:no-db
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-no-db
+          path: e2e/playwright-report/
+          if-no-files-found: ignore
+
+      - name: Stop app stack
+        if: always()
+        run: docker compose down -v
+
+  e2e-db:
+    name: E2E (db)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start app stack
+        run: docker compose up -d --wait
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: e2e/package-lock.json
+
+      - name: Install Playwright
+        working-directory: e2e
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Run db-dependent E2E tests
+        working-directory: e2e
+        run: npm run test:db
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-db
+          path: e2e/playwright-report/
+          if-no-files-found: ignore
+
+      - name: Stop app stack
+        if: always()
+        run: docker compose down -v
