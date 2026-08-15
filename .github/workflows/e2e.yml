@@ -6,12 +6,18 @@ on:
   pull_request:
     branches: [main, develop]
 
+permissions:
+  contents: read
+  actions: write
+
 jobs:
   e2e-no-db:
     name: E2E (no-db)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Start app stack
         run: docker compose up -d --wait
@@ -32,12 +38,14 @@ jobs:
         working-directory: e2e
         run: npm run test:no-db
 
-      - name: Upload Playwright report
+      - name: Upload Playwright diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report-no-db
-          path: e2e/playwright-report/
+          path: |
+            e2e/playwright-report/
+            e2e/test-results/
           if-no-files-found: ignore
 
       - name: Stop app stack
@@ -49,6 +57,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Start app stack
         run: docker compose up -d --wait
@@ -69,12 +79,14 @@ jobs:
         working-directory: e2e
         run: npm run test:db
 
-      - name: Upload Playwright report
+      - name: Upload Playwright diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report-db
-          path: e2e/playwright-report/
+          path: |
+            e2e/playwright-report/
+            e2e/test-results/
           if-no-files-found: ignore
 
       - name: Stop app stack
