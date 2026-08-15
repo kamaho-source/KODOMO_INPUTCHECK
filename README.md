@@ -84,6 +84,15 @@ docker compose down -v   # または make clean（DBデータも削除）
 
 `.github/workflows/ci.yml` で push / PR 時に Java 26 + PostgreSQL 上で `mvn test` を実行します。
 テストは `backend/src/test/java/` に置けば CI で自動実行されます。
+`mvn test` はテストが1件も無いと失敗します（`failIfNoTests=true`）。実装を追加したPRは対応するテストも一緒に追加してください。
+
+`.github/workflows/e2e.yml` で Playwright による画面のE2Eテストを実行します。DBデータに依存しないテストは `e2e/tests/no-db/`、DBデータに依存するテストは `e2e/tests/db/` に置いてください（詳細は `e2e/README.md`）。
+
+## ブランチ保護（main）
+
+- PRはレビュアーの Approve が最低1件無いとマージできません
+- `Java tests` のCIが成功していないとマージできません
+- リポジトリ管理者（Admin権限保持者）はこれらのルールをバイパスして直接マージできます
 
 ## Backlog連携（チケット管理）
 
